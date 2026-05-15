@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Викторина на МАКСимум</title>
+  <style>
+    :root{--bg:#070b18;--panel:#101938;--panel2:#162552;--line:#3552a4;--gold:#ffd34f;--text:#f4f7ff;--muted:#95a3cf;--ok:#4ade80;--bad:#f43f5e}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at top,#1a2e69,var(--bg) 42%);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    .app{max-width:1500px;margin:0 auto;padding:16px}
+    h1{margin:0 0 12px;text-align:center;font-size:48px;color:var(--gold);letter-spacing:1px}
+    .teams{display:grid;grid-template-columns:repeat(3,minmax(240px,1fr));gap:12px;margin-bottom:12px}
+    .team{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px}
+    .team input{width:100%;background:#0d1430;border:1px solid #425cae;color:#fff;border-radius:8px;padding:7px;font-weight:700}
+    .score{font-size:34px;text-align:center;font-weight:900;margin:6px 0}
+    .ops{display:flex;gap:8px;justify-content:center}
+    button,.btn,input,select,textarea{font:inherit}
+    .btn{background:#21356f;color:#fff;border:1px solid #4f6ec9;border-radius:8px;padding:8px 11px;cursor:pointer}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+    .small{font-size:13px;padding:6px 8px}
+    .board{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+    .category,.cell{position:relative;border-radius:10px;border:1px solid var(--line);text-align:center}
+    .category{background:var(--panel2);padding:12px 28px 12px 12px;font-size:24px;font-weight:800;min-height:66px;display:flex;align-items:center;justify-content:center}
+    .category [contenteditable]{width:100%;outline:none}
+    .cell{background:#162b69;min-height:100px;font-size:42px;font-weight:900;color:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .played{filter:grayscale(.5);opacity:.35}
+    .edit-ico{position:absolute;right:6px;top:4px;font-size:14px;opacity:0;transition:.15s}
+    .cell:hover .edit-ico,.category:hover .edit-ico{opacity:1}
+    .overlay{position:fixed;inset:0;background:#030714e6;display:none;align-items:center;justify-content:center;z-index:10;padding:14px}
+    .overlay.open{display:flex}
+    .panel{width:min(1020px,96vw);max-height:95vh;overflow:auto;background:var(--panel);border:1px solid #3d58b3;border-radius:14px;padding:14px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input,textarea,select{width:100%;background:#0b1330;color:#fff;border:1px solid #3d56aa;border-radius:8px;padding:8px}
+    textarea{min-height:80px;resize:vertical}
+    .answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .hidden{filter:blur(6px)}
+    .mini-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:6px}
+    .mini{border:1px solid #37509f;background:#0d1637;border-radius:7px;padding:7px;text-align:center;cursor:pointer}
+    .mini.done{color:var(--ok)} .mini.empty{color:var(--bad)} .mini.current{outline:2px solid var(--gold)}
+    .qwrap{position:fixed;inset:0;background:linear-gradient(180deg,#111c46,#070d22);display:none;z-index:12;padding:18px;overflow:auto}
+    .qwrap.open{display:block}
+    .qtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .meta{font-size:38px;font-weight:900}
+    .timer{text-align:center;min-width:120px}
+    .question{font-size:52px;margin:20px 0;text-align:center;font-weight:800}
+    .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:1280px;margin:0 auto}
+    .opt{background:#1a2d69;border:1px solid #4663be;border-radius:12px;padding:18px;font-size:34px;text-align:center}
+    .answer{display:none;text-align:center;animation:f .45s}
+    .answer.show{display:block}.correct{font-size:56px;color:#98ffac;font-weight:900}
+    @keyframes f{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    .award{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+    .final-card{width:min(900px,96vw);background:var(--panel2);padding:20px;border-radius:16px;border:1px solid #5273cf;text-align:center;animation:f .45s}
+    .winner{font-size:54px;color:var(--gold);font-weight:900}
+    table{width:100%;border-collapse:collapse;margin-top:10px}td,th{border-bottom:1px solid #4a66bf;padding:8px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <h1>Викторина на МАКСимум</h1>
+  <div id="teams" class="teams"></div>
+  <div class="toolbar">
+    <button class="btn" id="resetBtn">Сбросить игру</button>
+    <button class="btn small" id="exportBtn">Экспорт JSON</button>
+    <button class="btn small" id="copyBtn">Копировать JSON</button>
+    <button class="btn small" id="importBtn">Импорт JSON</button>
+    <input id="fileInput" type="file" accept="application/json" hidden>
+  </div>
+  <div id="board" class="board"></div>
+</div>
+
+<div id="editor" class="overlay"><div id="editorPanel" class="panel"></div></div>
+<div id="questionScreen" class="qwrap"></div>
+<div id="final" class="overlay"><div id="finalCard" class="final-card"></div></div>
+
+<script>
+const values=[100,200,300,400,500],idx=(c,r)=>r*5+c;
+const blank=()=>({text:'',options:['','','',''],correct:'',image:'',video:''});
+const defaults=()=>({categories:['Категория 1','Категория 2','Категория 3','Категория 4','Категория 5'],questions:Array.from({length:25},blank),played:Array(25).fill(false),teams:[{name:'Команда 1',score:0},{name:'Команда 2',score:0},{name:'Команда 3',score:0}]});
+const key='maxQuizState';
+let state=load(),current=0,timer=0,left=60,answered=false;
+function normalize(d){const z=defaults();d=d||{};d.categories=(d.categories||z.categories).slice(0,5);while(d.categories.length<5)d.categories.push(`Категория ${d.categories.length+1}`);d.questions=(d.questions||[]).slice(0,25).map(q=>Object.assign(blank(),q));while(d.questions.length<25)d.questions.push(blank());d.played=(d.played||Array(25).fill(false)).slice(0,25);while(d.played.length<25)d.played.push(false);d.teams=(d.teams||z.teams).slice(0,3);while(d.teams.length<3)d.teams.push({name:`Команда ${d.teams.length+1}`,score:0});d.teams=d.teams.map((t,i)=>({name:t.name||`Команда ${i+1}`,score:Number(t.score)||0}));return d}
+function load(){try{return normalize(JSON.parse(localStorage.getItem(key)))}catch{return defaults()}}
+function save(){localStorage.setItem(key,JSON.stringify(state))}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function yid(url){return (String(url).match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)||[])[1]||''}
+
+function renderTeams(){teams.innerHTML='';const val=values[Math.floor(current/5)]||100;state.teams.forEach((t,i)=>{const el=document.createElement('div');el.className='team';el.innerHTML=`<input data-i="${i}" value="${esc(t.name)}"><div class="score">${t.score}</div><div class="ops"><button class="btn" data-op="minus" data-i="${i}">-${val}</button><button class="btn" data-op="plus" data-i="${i}">+${val}</button></div>`;teams.append(el)});
+teams.querySelectorAll('input').forEach(i=>i.oninput=e=>{state.teams[e.target.dataset.i].name=e.target.value;save()});
+teams.querySelectorAll('button[data-op]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i,v=values[Math.floor(current/5)]||100;state.teams[i].score+=b.dataset.op==='plus'?v:-v;save();renderTeams();checkFinal()});}
+
+function renderBoard(){board.innerHTML='';for(let c=0;c<5;c++){const d=document.createElement('div');d.className='category';d.innerHTML=`<div contenteditable="true" data-c="${c}">${esc(state.categories[c])}</div><span class="edit-ico">✏️</span>`;board.append(d)}
+for(let r=0;r<5;r++)for(let c=0;c<5;c++){const i=idx(c,r),d=document.createElement('div');d.className='cell'+(state.played[i]?' played':'');d.innerHTML=`${values[r]}<span class="edit-ico">⚙️</span>`;d.onclick=()=>openQuestion(i);d.oncontextmenu=e=>{e.preventDefault();openEditor(i)};d.querySelector('.edit-ico').onclick=e=>{e.stopPropagation();openEditor(i)};board.append(d)}
+board.querySelectorAll('[contenteditable]').forEach(el=>el.oninput=e=>{state.categories[e.target.dataset.c]=e.target.innerText.trim();save()});}
+
+function openEditor(i){current=i;const q=state.questions[i],c=i%5,r=Math.floor(i/5);editorPanel.innerHTML=`<h2>Редактор вопроса</h2><div class='row2'><select id='catSel'>${state.categories.map((x,j)=>`<option value='${j}' ${j===c?'selected':''}>${esc(x||('Категория '+(j+1)))}</option>`).join('')}</select><select id='valSel'>${values.map((v,j)=>`<option value='${j}' ${j===r?'selected':''}>${v}</option>`).join('')}</select></div><textarea id='qText' placeholder='Текст вопроса'>${esc(q.text)}</textarea><div class='answers'>${[0,1,2,3].map(k=>`<input id='o${k}' value='${esc(q.options[k])}' placeholder='Вариант ${k+1}'>`).join('')}</div><input id='correct' class='hidden' value='${esc(q.correct)}' placeholder='Правильный ответ'><button class='btn small' id='toggleCorrect'>Показать / скрыть правильный ответ</button><input id='imgUrl' value='${esc(q.image)}' placeholder='URL изображения'><input id='imgFile' type='file' accept='image/*'><input id='videoUrl' value='${esc(q.video)}' placeholder='YouTube URL'><div id='mini' class='mini-grid'></div><div class='toolbar' style='margin-top:10px'><button class='btn' id='closeEditor'>Закрыть</button></div>`;
+const persist=()=>{const qq=state.questions[current];qq.text=qText.value;qq.options=[o0.value,o1.value,o2.value,o3.value];qq.correct=correct.value;qq.image=imgUrl.value;qq.video=videoUrl.value;save();renderBoard()};
+editorPanel.oninput=persist;toggleCorrect.onclick=()=>correct.classList.toggle('hidden');imgFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();fr.onload=v=>{imgUrl.value=v.target.result;persist()};fr.readAsDataURL(f)};
+catSel.onchange=valSel.onchange=()=>{persist();const ni=idx(+catSel.value,+valSel.value);if(ni!==current){[state.questions[current],state.questions[ni]]=[state.questions[ni],state.questions[current]];current=ni;save();openEditor(current)}};
+for(let rr=0;rr<5;rr++)for(let cc=0;cc<5;cc++){const ii=idx(cc,rr),m=document.createElement('button');m.className='mini '+(state.questions[ii].text.trim()?'done':'empty')+(ii===current?' current':'');m.textContent=state.questions[ii].text.trim()?'✓':'✗';m.onclick=()=>{persist();openEditor(ii)};mini.append(m)}
+closeEditor.onclick=closeOverlays;editor.classList.add('open');}
+
+function openQuestion(i){current=i;answered=false;left=60;const q=state.questions[i],cat=state.categories[i%5],val=values[Math.floor(i/5)],vid=yid(q.video);
+questionScreen.innerHTML=`<div class='qtop'><div class='meta'>${esc(cat)} — ${val}</div><div class='timer' id='timerWrap'><svg width='96' height='96' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' stroke='#3e59ad' stroke-width='10' fill='none'/><circle id='ring' cx='50' cy='50' r='44' stroke='#63cbff' stroke-width='10' fill='none' transform='rotate(-90 50 50)' stroke-dasharray='276.46'></circle></svg><div id='t'>60</div></div></div><div class='question'>${esc(q.text||'(Вопрос не заполнен)')}</div><div class='opt-grid' id='opts'>${q.options.filter(Boolean).map(o=>`<div class='opt'>${esc(o)}</div>`).join('')}</div><div id='answer' class='answer'><div class='correct'>${esc(q.correct||'—')}</div>${q.image?`<img src='${esc(q.image)}' style='max-width:90vw;max-height:45vh;border-radius:10px;margin-top:8px'>`:''}${vid?`<div style='margin-top:10px'><iframe width='960' height='540' style='max-width:95vw' src='https://www.youtube.com/embed/${vid}' allowfullscreen></iframe></div>`:''}</div><div class='toolbar'><button class='btn' id='showBtn'>Показать ответ</button><button class='btn' id='backBtn'>‹ Назад к игровому полю</button></div><div id='award' class='award'></div>`;
+renderAward();startTimer();showBtn.onclick=showAnswer;backBtn.onclick=closeOverlays;questionScreen.classList.add('open');}
+function renderAward(){award.innerHTML='';const v=values[Math.floor(current/5)]||100;state.teams.forEach((t,i)=>{const d=document.createElement('div');d.className='team';d.innerHTML=`<div style='font-weight:700'>${esc(t.name)}</div><div class='ops'><button class='btn' data-op='minus' data-i='${i}'>-${v}</button><button class='btn' data-op='plus' data-i='${i}'>+${v}</button></div>`;award.append(d)});
+award.querySelectorAll('button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;state.teams[i].score+=b.dataset.op==='plus'?v:-v;save();renderTeams();renderAward();checkFinal()});}
+function startTimer(){clearInterval(timer);timer=setInterval(()=>{if(answered)return;left=Math.max(0,left-1);const ring=document.getElementById('ring'),tt=document.getElementById('t');if(!ring)return;ring.style.strokeDashoffset=(276.46*(1-left/60)).toFixed(2);ring.style.stroke=left<=10?'#ff4040':'#63cbff';tt.textContent=left;if(left===0)clearInterval(timer)},1000)}
+function showAnswer(){answered=true;clearInterval(timer);const tw=document.getElementById('timerWrap'),op=document.getElementById('opts');if(tw)tw.style.display='none';if(op)op.style.display='none';document.getElementById('answer').classList.add('show');state.played[current]=true;save();renderBoard();checkFinal()}
+function checkFinal(){if(!state.played.every(Boolean))return;const max=Math.max(...state.teams.map(t=>t.score)),wins=state.teams.filter(t=>t.score===max).map(t=>t.name).join(' и ');finalCard.innerHTML=`<h2>🏆 Игра завершена!</h2><div class='winner'>${esc(wins)}</div><div style='font-size:28px;margin:10px 0'>${max} очков</div><table><tr><th>#</th><th>Команда</th><th>Счёт</th></tr>${[...state.teams].sort((a,b)=>b.score-a.score).map((t,i)=>`<tr><td>${i+1}</td><td>${esc(t.name)}</td><td>${t.score}</td></tr>`).join('')}</table>`;final.classList.add('open')}
+function closeOverlays(){editor.classList.remove('open');questionScreen.classList.remove('open');final.classList.remove('open');clearInterval(timer);renderTeams();renderBoard()}
+
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
+resetBtn.onclick=()=>{if(!confirm('Сбросить состояние игры и счёт?'))return;state.played=Array(25).fill(false);state.teams.forEach(t=>t.score=0);save();closeOverlays()};
+exportBtn.onclick=()=>{const txt=JSON.stringify(state,null,2),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='max-quiz.json';a.click()};
+copyBtn.onclick=()=>navigator.clipboard?.writeText(JSON.stringify(state,null,2));
+importBtn.onclick=()=>fileInput.click();fileInput.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=v=>{try{state=normalize(JSON.parse(v.target.result));save();closeOverlays()}catch{alert('Некорректный JSON')}};r.readAsText(f)};
+renderTeams();renderBoard();
+</script>
+</body>
+</html>
